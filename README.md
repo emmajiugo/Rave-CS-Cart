@@ -1,9 +1,6 @@
 # Rave-CS-Cart
 Rave by Flutterwave CS-Cart
 
-- Contributor - Oluwole Adebiyi (King Flamez)
-- Keywords - ussd, cs-cart, cscart, rave, flutterwave, account, bank payments, debit-cards, MPESA, ecommerce, cscart payment.
-
 ## Description
 Allows you to use CS-Cart with flutterwave's Rave. Accept Payments worldwide into your CSCart website. 
 
@@ -12,8 +9,7 @@ Allows you to use CS-Cart with flutterwave's Rave. Accept Payments worldwide int
 ## Requirements
 1. CS-Cart installation
 2. A [live rave account](https://rave.flutterwave.com)
-
-> [Test rave account](https://ravesandboxapi.flutterwave.com)
+3. A [Test rave account](https://ravesandboxapi.flutterwave.com)
 
 ## Installation
 
