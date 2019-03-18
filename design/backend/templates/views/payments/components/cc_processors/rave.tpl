@@ -24,7 +24,7 @@
 </div>
 {* <input type="hidden" name="payment_data[processor_params][iframe_mode]" value="Y"   size="60"> *}
 
-<div class="control-group form-field">
+{* <div class="control-group form-field">
     <label class="control-label" for="rave_country_{$payment_id}">Country:</label>
     <div class="controls">
       <select name="payment_data[processor_params][rave_country]" id="rave_country_{$payment_id}">
@@ -34,9 +34,9 @@
           <option value="KE" {if $processor_params.rave_country == "KE"}selected="selected"{/if}>Kenya</option>
       </select>
     </div>
-</div>
+</div> *}
 
-<div class="control-group form-field">
+{* <div class="control-group form-field">
     <label class="control-label" for="rave_currency_{$payment_id}">Currency:</label>
     <div class="controls">
       <select name="payment_data[processor_params][rave_currency]" id="rave_currency_{$payment_id}">
@@ -49,7 +49,7 @@
           <option value="ZAR" {if $processor_params.rave_currency == "ZAR"}selected="selected"{/if}>South African Rands</option>
       </select>
     </div>
-</div>
+</div> *}
 
 <div class="control-group form-field">
     <label class="control-label" for="rave_payment_method_{$payment_id}">Payment Method:</label>

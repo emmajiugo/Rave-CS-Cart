@@ -49,7 +49,7 @@ function fn_rave_place_order($original_order_id)
 
 // Return from payment
 if (!empty($_REQUEST['txref'])) {
-    // if ($mode == 'return' && !empty($_REQUEST['txref'])) {
+// if ($mode == 'return' && !empty($_REQUEST['txref'])) {
     require './init_payment.php';
     if (isset($view) === false) {
         $view = Registry::get('view');
@@ -63,7 +63,8 @@ if (!empty($_REQUEST['txref'])) {
     $ref = $_REQUEST['txref'];
     $order_id = fn_rave_place_order(explode("_", $_REQUEST['txref'])[0]);
     $amount = db_get_field("SELECT ?:orders.total FROM ?:orders  WHERE ?:orders.order_id = " . $order_id);
-    $currency = $processor_data['processor_params']['rave_currency'];
+    // $currency = $processor_data['processor_params']['rave_currency'];
+    $currency = fn_get_secondary_currency();
     $currencyamount = fn_rave_adjust_amount($amount, $currency);
 
     if (!empty($order_id) and !empty($currencyamount)) {
@@ -113,21 +114,22 @@ if (!empty($_REQUEST['txref'])) {
             $chargeResponsecode = $resp['data']['chargecode'];
             $chargeAmount = $resp['data']['amount'];
             $chargeCurrency = $resp['data']['currency'];
+            $code = $resp['data']['txref'];
 
             if (($chargeResponsecode == "00" || $chargeResponsecode == "0") && ($chargeAmount == $currencyamount) && ($chargeCurrency == $currency)) {
                 $pp_response['order_status'] = 'P';
-                $pp_response['transaction_id'] = $ref;
+                $pp_response['transaction_id'] = $code;
                 $pp_response['Status'] = 'Payment Successful';
                     // fn_change_order_status($order_id, 'P');
                 fn_finish_payment($order_id, $pp_response, false);
                 fn_order_placement_routines('route', $order_id, false);
             } else {
                 $pp_response['order_status'] = 'O';
-                $pp_response['transaction_id'] = $ref;
+                $pp_response['transaction_id'] = $code;
                 $pp_response['Status'] = 'Payment Failed';
 
                     // fn_finish_payment($order_id, $pp_response);
-                fn_set_notification('E', __('error'), 'Payment Failed #' . $ref);
+                fn_set_notification('E', __('error'), 'Payment Failed #' . $code);
                 fn_order_placement_routines('checkout_redirect');
             }
 
@@ -153,11 +155,13 @@ if (!empty($_REQUEST['txref'])) {
         $env = "live";
     }
 
-    $total = fn_rave_adjust_amount($order_info['total'], $processor_data['processor_params']['rave_currency']);
+    // $total = fn_rave_adjust_amount($order_info['total'], $processor_data['processor_params']['rave_currency']);
+    $total = $order_info['total'] + $order_info['payment_surcharge'];
     $paymentMethod = $processor_data['processor_params']['rave_payment_method'];
-    $country = $processor_data['processor_params']['rave_country'];
+    // $country = $processor_data['processor_params']['rave_country'];
     $logo = $processor_data['processor_params']['rave_logo'];
-    $currency = $processor_data['processor_params']['rave_currency'];
+    // $currency = $processor_data['processor_params']['rave_currency'];
+    $currency = fn_get_secondary_currency();
     $email = $order_info['email'];
     $firstName = $order_info['b_firstname'];
     $lastName = $order_info['b_lastname'];
@@ -168,35 +172,50 @@ if (!empty($_REQUEST['txref'])) {
         $paymentMethod = "both";
     }
 
+    // switch country based on currency
+    switch ($currency) {
+        case 'KES':
+          $country = 'KE';
+          break;
+        case 'GHS':
+          $country = 'GH';
+          break;
+        case 'ZAR':
+          $country = 'ZA';
+          break;
+        default:
+          $country = 'NG';
+          break;
+    }
+
     $html = '<!DOCTYPE html>
   <html>
   <body>
 
-  <form method="POST" action="https://hosted.flutterwave.com/processPayment.php" id="paymentForm">
-    <input type="hidden" name="amount" value="' . $total . '" /> <!-- Replace the value with your transaction amount -->
-    <input type="hidden" name="payment_method" value="' . $paymentMethod . '" /> <!-- Can be card, account, both (optional) -->
-    <input type="hidden" name="logo" value="' . $logo . '" /> <!-- Replace the value with your logo url (optional) -->
-    <input type="hidden" name="country" value="' . $country . '" /> <!-- Replace the value with your transaction country -->
-    <input type="hidden" name="currency" value="' . $currency . '" /> <!-- Replace the value with your transaction currency -->
-    <input type="hidden" name="email" value="' . $email . '" /> <!-- Replace the value with your customer email -->
-    <input type="hidden" name="firstname" value="' . $firstName . '" /> <!-- Replace the value with your customer firstname (optional) -->
-    <input type="hidden" name="lastname"value="' . $lastName . '" /> <!-- Replace the value with your customer lastname (optional) -->
-    <input type="hidden" name="phonenumber" value="' . $phone . '" /> <!-- Replace the value with your customer phonenumber (optional if email is passes) -->
-    <input type="hidden" name="ref" value="' . $ref . '_' . time() . '" />
-    <input type="hidden" name="env" value="' . $env . '"> <!-- live or staging -->
-    <input type="hidden" name="publicKey" value="' . $PBFPubKey . '"> <!-- Put your public key here -->
-    <input type="hidden" name="secretKey" value="' . $secretKey . '"> <!-- Put your secret key here -->
-    <input type="hidden" name="successurl" value="' . fn_payment_url('current', 'rave.php') . '"> <!-- Put your success url here -->
-    <input type="hidden" name="failureurl" value="' . fn_payment_url('current', 'rave.php') . '"> <!-- Put your failure url here -->
-    <!-- <input type="submit" value="Submit" /> -->
-  </form>
-  <script>
-    window.onload = function(){
-      document.forms["paymentForm"].submit();
-    }
-  </script>
-</body>
-</html>';
+    <form method="POST" action="https://hosted.flutterwave.com/processPayment.php" id="paymentForm">
+        <input type="hidden" name="amount" value="' . $total . '" >
+        <input type="hidden" name="payment_method" value="' . $paymentMethod . '" >
+        <input type="hidden" name="logo" value="' . $logo . '" >
+        <input type="hidden" name="country" value="' . $country . '" >
+        <input type="hidden" name="currency" value="' . $currency . '" >
+        <input type="hidden" name="email" value="' . $email . '" >
+        <input type="hidden" name="firstname" value="' . $firstName . '" >
+        <input type="hidden" name="lastname"value="' . $lastName . '" >
+        <input type="hidden" name="phonenumber" value="' . $phone . '" >
+        <input type="hidden" name="ref" id="ref" value="' . $ref . '_' . time() . '" >
+        <input type="hidden" name="env" value="' . $env . '">
+        <input type="hidden" name="publicKey" value="' . $PBFPubKey . '">
+        <input type="hidden" name="secretKey" value="' . $secretKey . '">
+        <input type="hidden" name="successurl" value="' . fn_payment_url('current', 'rave.php') . '">
+        <input type="hidden" name="failureurl" value="' . fn_payment_url('current', 'rave.php') . '">
+    </form>
+    <script>
+        window.onload = function(){
+            document.forms["paymentForm"].submit();
+        }
+    </script>
+    </body>
+    </html>';
 
     echo $html;
 }
